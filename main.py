@@ -1,10 +1,8 @@
 import datetime
-from typing import Optional
+from typing import Optional, Dict, Any, List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-# Import MBBank chỉ khi cần thiết để giảm kích thước ban đầu của lambda function
-# from mbbank import MBBank
 
 app = FastAPI(title="Health Check API")
 
@@ -29,7 +27,7 @@ async def health_check():
 async def get_transaction(
     username: Optional[str] = None,
     password: Optional[str] = None,
-    days: int = 30
+    days: int = Query(default=30, le=60)  # Limit max days to 60
 ):
     """
     Get transaction history from MB Bank
@@ -42,29 +40,46 @@ async def get_transaction(
         from mbbank import MBBank
         
         mb = MBBank(username=username, password=password)
+        
+        # Get balance first as a separate operation
+        try:
+            balance = mb.getBalance()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching balance: {str(e)}")
+        
+        # Get transactions with limited date range
         end_query_day = datetime.datetime.now()
-        start_query_day = end_query_day - datetime.timedelta(days=days)
-        balance = mb.getBalance()
-        trans = mb.getTransactionAccountHistory(from_date=start_query_day, to_date=end_query_day)
+        start_query_day = end_query_day - datetime.timedelta(days=min(days, 60))  # Ensure max 60 days
+        
+        try:
+            trans = mb.getTransactionAccountHistory(from_date=start_query_day, to_date=end_query_day)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching transactions: {str(e)}")
         
         # Limit the amount of data returned to reduce size
         transactions = trans.get('transactionHistoryList', [])
+        
+        # Limit number of transactions to maximum 100
+        transactions = transactions[:100] if len(transactions) > 100 else transactions
+        
         # Return only essential fields to reduce response size
         simplified_transactions = []
         
         for t in transactions:
-            simplified_transactions.append({
-                "transactionId": t.get("transactionId", ""),
-                "transactionDate": t.get("transactionDate", ""),
-                "accountNo": t.get("accountNo", ""),
-                "creditAmount": t.get("creditAmount", 0),
-                "debitAmount": t.get("debitAmount", 0),
-                "description": t.get("description", ""),
-                "availableBalance": t.get("availableBalance", 0),
-            })
+            # Only include transactions with actual monetary value
+            if t.get("creditAmount", 0) > 0 or t.get("debitAmount", 0) > 0:
+                simplified_transactions.append({
+                    "id": t.get("transactionId", "")[:10],  # Truncate ID
+                    "date": t.get("transactionDate", ""),
+                    "credit": t.get("creditAmount", 0),
+                    "debit": t.get("debitAmount", 0),
+                    "desc": t.get("description", "")[:100] if t.get("description") else "",  # Truncate description
+                    "balance": t.get("availableBalance", 0),
+                })
         
         return {
             "balance": balance,
+            "count": len(simplified_transactions),
             "transaction": simplified_transactions
         }
     except Exception as e:
