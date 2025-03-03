@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +27,7 @@ async def health_check():
 async def get_transaction(
     username: Optional[str] = None,
     password: Optional[str] = None,
-    days: int = Query(default=30, le=60)  # Limit max days to 60
+    days: int = Query(default=30, le=100)  # Limit max days to 60
 ):
     """
     Get transaction history from MB Bank
