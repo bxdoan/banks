@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fastapi-health-api"
+name = "banks-api"
 version = "0.1.0"
-description = "A simple FastAPI application with a health check endpoint"
+description = "A simple MBBank api wrapping"
 requires-python = ">=3.13.2,<4.0"
 license = {text = "MIT"}
 dependencies = [

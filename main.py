@@ -1,9 +1,8 @@
 import datetime
-import os
-from mbbank import MBBank
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from mbbank import MBBank
 
 app = FastAPI(title="Health Check API")
 
@@ -25,7 +24,7 @@ async def health_check():
 
 
 @app.get("/transaction")
-def get_transaction(
+async def get_transaction(
     username:str=None,
     password:str=None,
     days:int=30
