@@ -6,7 +6,16 @@
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb",
-        "excludeFiles": ["**/*.pyc", "**/__pycache__/**"]
+        "excludeFiles": [
+          "**/*.pyc", 
+          "**/__pycache__/**",
+          "**/tests/**",
+          "**/*.md",
+          ".git/**",
+          ".github/**",
+          ".venv/**",
+          ".idea/**"
+        ]
       }
     }
   ],
@@ -15,5 +24,11 @@
       "src": "/(.*)",
       "dest": "main.py"
     }
-  ]
+  ],
+  "functions": {
+    "main.py": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 } 

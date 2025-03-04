@@ -4,6 +4,9 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+# Cache cho session MBBank để tránh khởi tạo lại
+mbbank_sessions = {}
+
 app = FastAPI(title="Health Check API")
 
 # Configure CORS
@@ -36,10 +39,27 @@ async def get_transaction(
         raise HTTPException(status_code=400, detail="Username and password are required")
     
     try:
+        # Tạo cache key từ username (không lưu password)
+        cache_key = f"mb_{username}"
+        
         # Import MBBank only when this endpoint is called
         from mbbank import MBBank
         
-        mb = MBBank(username=username, password=password)
+        # Kiểm tra session trong cache
+        if cache_key in mbbank_sessions:
+            mb = mbbank_sessions[cache_key]
+            # Kiểm tra xem session có còn hợp lệ không
+            try:
+                # Thử lấy thông tin để kiểm tra session
+                mb.getBalance()
+            except:
+                # Nếu session hết hạn, tạo mới session
+                mb = MBBank(username=username, password=password)
+                mbbank_sessions[cache_key] = mb
+        else:
+            # Tạo session mới và lưu vào cache
+            mb = MBBank(username=username, password=password)
+            mbbank_sessions[cache_key] = mb
         
         # Get balance first as a separate operation
         try:
