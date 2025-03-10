@@ -12,7 +12,7 @@ dependencies = [
     "fastapi>=0.115.10",
     "uvicorn>=0.23.2",
     "pydantic>=2.10.6",
-    "mbbank-lib>=0.2.2",
+    "mbbank-lib>=0.2.3",
 ]
 
 [tool.hatch.build.targets.wheel]
